@@ -158,5 +158,19 @@
 
     renderClues();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://fnrpbipybkraazuvthpd.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_Uarpo7EMMahoVKUOXQ1a2g_fVa5czZc";
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+console.log("Reel Riddle connected to Supabase!");
+</script>
 </body>
 </html>
