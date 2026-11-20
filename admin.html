@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reel Riddle Admin</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0e0e18;
+  color: white;
+  padding: 20px;
+}
+.container {
+  max-width: 500px;
+  margin: 30px auto;
+  background: #1b1b29;
+  padding: 25px;
+  border-radius: 18px;
+}
+h1 {
+  text-align: center;
+  color: #a78bfa;
+}
+input, select, button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 12px;
+  border-radius: 9px;
+  border: none;
+  box-sizing: border-box;
+}
+input, select {
+  background: #29293b;
+  color: white;
+}
+button {
+  background: #8b5cf6;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: .6;
+}
+label {
+  display: block;
+  margin-top: 15px;
+}
+.note {
+  color: #b8b8c9;
+  font-size: 13px;
+}
+#status {
+  margin-top: 15px;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>🎬 Reel Riddle</h1>
+<h3 style="text-align:center">Admin Dashboard</h3>
+
+<div id="loginBox">
+  <h3>Admin Login</h3>
+  <input type="email" id="email" placeholder="Admin email">
+  <input type="password" id="password" placeholder="Password">
+  <button id="loginBtn" onclick="login()">Login</button>
+</div>
+
+<div id="dashboard" style="display:none">
+
+  <p id="adminEmail"></p>
+  <button onclick="logout()">Logout</button>
+
+  <hr>
+
+  <label>Challenge Date</label>
+  <input type="date" id="challengeDate">
+
+  <label>Language</label>
+  <select id="language">
+    <option value="Telugu">Telugu</option>
+    <option value="Hindi">Hindi</option>
+  </select>
+
+  <h3>🎧 Upload Audio Clues</h3>
+  <p class="note">Upload four audio clips for this movie. MP3 is recommended.</p>
+
+  <label>Clue 1 — 100 Points</label>
+  <input type="file" id="audio1" accept="audio/*">
+
+  <label>Clue 2 — 75 Points</label>
+  <input type="file" id="audio2" accept="audio/*">
+
+  <label>Clue 3 — 50 Points</label>
+  <input type="file" id="audio3" accept="audio/*">
+
+  <label>Clue 4 — 25 Points</label>
+  <input type="file" id="audio4" accept="audio/*">
+
+  <label>Correct Movie Answer</label>
+  <input type="text" id="answer" placeholder="Enter movie name">
+
+  <button id="publishBtn" onclick="publishChallenge()">🚀 Publish Challenge</button>
+
+</div>
+
+<div id="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://fnrpbipybkraazuvthpd.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Uarpo7EMMahoVKUOXQ1a2g_fVa5czZc";
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const statusBox = document.getElementById("status");
+
+function showStatus(message, color = "white") {
+  statusBox.textContent = message;
+  statusBox.style.color = color;
+}
+
+function localToday() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+document.getElementById("challengeDate").value = localToday();
+
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    showStatus("Enter your email and password.", "#ff9999");
+    return;
+  }
+
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true;
+  showStatus("Logging in...");
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    showDashboard(data.user);
+  } catch (error) {
+    showStatus(error.message, "#ff9999");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showDashboard(user) {
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("adminEmail").textContent =
+    "Logged in: " + user.email;
+  showStatus("Welcome, Admin!", "#9cffb0");
+}
+
+async function logout() {
+  await db.auth.signOut();
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("loginBox").style.display = "block";
+  showStatus("Logged out.");
+}
+
+async function publishChallenge() {
+  const date = document.getElementById("challengeDate").value;
+  const language = document.getElementById("language").value;
+  const answer = document.getElementById("answer").value.trim();
+
+  const files = [
+    document.getElementById("audio1").files[0],
+    document.getElementById("audio2").files[0],
+    document.getElementById("audio3").files[0],
+    document.getElementById("audio4").files[0]
+  ];
+
+  if (!date || !answer || files.some(file => !file)) {
+    showStatus("Please select a date, answer and all 4 audio clips.", "#ff9999");
+    return;
+  }
+
+  const btn = document.getElementById("publishBtn");
+  btn.disabled = true;
+  showStatus("Uploading audio clips... Please wait.");
+
+  let challengeId = null;
+  const uploadedPaths = [];
+
+  try {
+    const { data: userData } = await db.auth.getUser();
+
+    if (!userData.user) {
+      throw new Error("Please login again.");
+    }
+
+    // Upload the four audio files
+    const audioUrls = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${date}/${language}/${Date.now()}_${i + 1}_${safeName}`;
+
+      const { error: uploadError } = await db.storage
+        .from("challenge-audio")
+        .upload(path, file, {
+          upsert: false,
+          contentType: file.type || "audio/mpeg"
+        });
+
+      if (uploadError) throw uploadError;
+
+      uploadedPaths.push(path);
+
+      const { data: publicData } = db.storage
+        .from("challenge-audio")
+        .getPublicUrl(path);
+
+      audioUrls.push(publicData.publicUrl);
+    }
+
+    showStatus("Saving challenge...");
+
+    // Save the challenge
+    const { data: challenge, error: challengeError } = await db
+      .from("daily_challenges")
+      .insert({
+        challenge_date: date,
+        language: language,
+        audio_paths: audioUrls
+      })
+      .select("id")
+      .single();
+
+    if (challengeError) throw challengeError;
+
+    challengeId = challenge.id;
+
+    // Save answer privately
+    const { error: answerError } = await db
+      .from("challenge_answers")
+      .insert({
+        challenge_id: challengeId,
+        correct_answer: answer
+      });
+
+    if (answerError) throw answerError;
+
+    showStatus("🎉 Challenge published successfully!", "#9cffb0");
+
+    // Clear form
+    document.getElementById("answer").value = "";
+    files.forEach((file, i) => {
+      document.getElementById("audio" + (i + 1)).value = "";
+    });
+
+  } catch (error) {
+
+    // Remove challenge if answer saving fails
+    if (challengeId) {
+      await db.from("daily_challenges").delete().eq("id", challengeId);
+    }
+
+    // Remove uploaded audio if publishing fails
+    if (uploadedPaths.length > 0) {
+      await db.storage.from("challenge-audio").remove(uploadedPaths);
+    }
+
+    showStatus("Error: " + error.message, "#ff9999");
+
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Restore admin session after page refresh
+db.auth.getSession().then(({ data }) => {
+  if (data.session) {
+    showDashboard(data.session.user);
+  }
+});
+</script>
+
+</body>
+</html>
