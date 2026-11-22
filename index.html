@@ -2,220 +2,347 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reel Riddle</title>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-      background: #111827;
-      color: white;
-      text-align: center;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: 30px auto;
-      padding: 25px 18px;
-      background: #1f2937;
-      border-radius: 15px;
-    }
-
-    h1 {
-      color: #f9a8d4;
-    }
-
-    button {
-      padding: 13px 20px;
-      margin: 8px;
-      border: none;
-      border-radius: 9px;
-      background: #ec4899;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    .clue-button {
-      display: block;
-      width: 100%;
-      margin: 12px 0;
-      background: #374151;
-    }
-
-    .clue-button:hover {
-      background: #4b5563;
-    }
-
-    #status {
-      margin-top: 20px;
-      color: #f9a8d4;
-      min-height: 24px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reel Riddle - Movie Guessing Challenge</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10121b;color:#fff;font-family:Arial,sans-serif;min-height:100vh}
+.container{width:100%;max-width:520px;margin:auto;padding:24px 18px}
+header{text-align:center;padding:18px 0 25px}
+.logo{font-size:34px;font-weight:900;color:#ffca55}
+header p{color:#aaa;margin-top:8px}
+.card{background:#1c2030;border:1px solid #30364a;border-radius:18px;padding:22px;margin-bottom:18px}
+h2{margin:0 0 16px;font-size:21px}
+label{display:block;color:#bbb;margin:14px 0 8px;font-size:14px}
+select,input{width:100%;padding:14px;border-radius:10px;border:1px solid #414960;background:#111522;color:#fff;font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:12px}
+.primary{background:#ffca55;color:#171717}
+.secondary{background:#343b52;color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+.clue{background:#252b3e;border-radius:12px;padding:16px;margin:12px 0}
+.clue h3{margin:0 0 10px}
+.clue p{color:#bbb;font-size:14px;margin:0}
+.status{color:#ffca55;text-align:center;font-weight:bold;margin:12px 0}
+.score{font-size:42px;color:#ffca55;font-weight:bold;text-align:center}
+.small{font-size:13px;color:#aaa;text-align:center;line-height:1.5}
+.hidden{display:none}
+#error{color:#ff8585}
+#message{color:#ffca55;text-align:center;line-height:1.5;margin-top:14px}
+footer{text-align:center;color:#777;font-size:12px;padding:20px}
+</style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>🎬 Reel Riddle</h1>
-    <p>Listen to the audio clues and guess the movie!</p>
+<div class="container">
+<header>
+  <div class="logo">🎬 REEL RIDDLE</div>
+  <p>Listen carefully. Guess the movie. Win points!</p>
+</header>
 
-    <h3>Select Language</h3>
-    <button onclick="selectLanguage('Telugu')">Telugu</button>
-    <button onclick="selectLanguage('Hindi')">Hindi</button>
+<section class="card" id="setup">
+  <h2>🎧 Daily Movie Challenge</h2>
+  <label for="language">Choose your language</label>
+  <select id="language">
+    <option value="Telugu">Telugu</option>
+    <option value="Hindi">Hindi</option>
+  </select>
+  <button class="primary" id="startBtn">Start Challenge</button>
+  <p class="small">You get one attempt per day on this browser.</p>
+  <p id="setupMessage" class="small"></p>
+</section>
 
-    <div id="clues"></div>
-    <p id="status">Select Telugu or Hindi to begin.</p>
-  </div>
+<section class="card hidden" id="game">
+  <div class="status" id="clueStatus">CLUE 1 OF 4</div>
+  <div id="clueArea"></div>
 
-  <script type="module">
-    import { createClient } from
-      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+  <label for="answer">Guess the movie name</label>
+  <input id="answer" type="text" placeholder="Enter movie name..." autocomplete="off">
+  <button class="primary" id="submitBtn">Submit Answer</button>
+  <button class="secondary" id="passBtn">Pass to Next Clue</button>
+  <p id="message"></p>
+</section>
 
-    const SUPABASE_URL =
-      "https://fnrpbipybkraazuvthpd.supabase.co";
+<section class="card hidden" id="result">
+  <h2 style="text-align:center">🏆 Challenge Completed!</h2>
+  <div class="score" id="finalScore">0</div>
+  <p class="small">YOUR FINAL SCORE</p>
+  <p id="resultMessage" style="text-align:center"></p>
+  <p class="small">Come back tomorrow for a new challenge!</p>
+</section>
 
-    const SUPABASE_KEY =
-      "sb_publishable_Uarpo7EMMahoVKUOXQ1a2g_fVa5czZc";
+<section class="card hidden" id="locked">
+  <h2 style="text-align:center">🔒 Daily Attempt Used</h2>
+  <p class="small">You have already started or completed today's challenge on this browser.</p>
+  <p class="small">Come back tomorrow to play again.</p>
+</section>
 
-    const supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+<p id="error" class="small"></p>
+<footer>© Reel Riddle</footer>
+</div>
 
-    let currentAudio = null;
-    let currentIndex = null;
+<script>
+const SUPABASE_URL = "https://fnrpbipybkraazuvthpd.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Uarpo7EMMahoVKUOXQ1a2g_fVa5czZc";
 
-    const cluesDiv = document.getElementById("clues");
-    const statusDiv = document.getElementById("status");
+const setup = document.getElementById("setup");
+const game = document.getElementById("game");
+const result = document.getElementById("result");
+const locked = document.getElementById("locked");
+const startBtn = document.getElementById("startBtn");
+const submitBtn = document.getElementById("submitBtn");
+const passBtn = document.getElementById("passBtn");
+const answerInput = document.getElementById("answer");
+const message = document.getElementById("message");
+const errorBox = document.getElementById("error");
+const clueArea = document.getElementById("clueArea");
 
-    function getTodayDate() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
+let challenge = null;
+let sessionId = null;
+let currentClue = 1;
+let points = 0;
+let audio = null;
+let busy = false;
+let storageKey = null;
 
-      return `${year}-${month}-${day}`;
+function indiaDate(){
+  return new Intl.DateTimeFormat("en-CA",{
+    timeZone:"Asia/Kolkata",
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit"
+  }).format(new Date());
+}
+
+function headers(){
+  return {
+    "apikey":SUPABASE_KEY,
+    "Authorization":"Bearer "+SUPABASE_KEY,
+    "Content-Type":"application/json"
+  };
+}
+
+function showError(text){
+  errorBox.textContent = text;
+}
+
+function saveProgress(completed=false){
+  localStorage.setItem(storageKey,JSON.stringify({
+    sessionId,
+    language:challenge.language,
+    currentClue,
+    points,
+    completed
+  }));
+}
+
+async function getChallenge(language){
+  const date = indiaDate();
+  const query = new URLSearchParams({
+    select:"id,challenge_date,language,audio_paths",
+    challenge_date:"eq."+date,
+    language:"eq."+language,
+    limit:"1"
+  });
+
+  const response = await fetch(
+    SUPABASE_URL+"/rest/v1/daily_challenges?"+query.toString(),
+    {headers:headers()}
+  );
+
+  if(!response.ok) throw new Error("Could not load today's challenge.");
+
+  const rows = await response.json();
+  if(!rows.length) throw new Error("Today's "+language+" challenge is not available yet.");
+
+  if(!Array.isArray(rows[0].audio_paths) || rows[0].audio_paths.length!==4){
+    throw new Error("The challenge must have exactly four audio clues.");
+  }
+
+  return rows[0];
+}
+
+async function startSession(language){
+  const response = await fetch(SUPABASE_URL+"/functions/v1/super-task",{
+    method:"POST",
+    headers:headers(),
+    body:JSON.stringify({
+      action:"start",
+      challenge_date:indiaDate(),
+      language
+    })
+  });
+
+  const data = await response.json();
+  if(!response.ok || !data.success){
+    throw new Error(data.error || "Could not start the challenge.");
+  }
+  return data.session_id;
+}
+
+function showClue(){
+  if(audio){
+    audio.pause();
+    audio.currentTime=0;
+    audio=null;
+  }
+
+  const path = challenge.audio_paths[currentClue-1];
+
+  document.getElementById("clueStatus").textContent =
+    "CLUE "+currentClue+" OF 4";
+
+  clueArea.innerHTML = `
+    <div class="clue">
+      <h3>🔊 Clue ${currentClue}</h3>
+      <p>Listen carefully and think about the movie.</p>
+      <audio id="clueAudio" controls preload="none" style="width:100%;margin-top:14px"></audio>
+    </div>
+  `;
+
+  audio = document.getElementById("clueAudio");
+  audio.src = path;
+  audio.load();
+
+  answerInput.value="";
+  answerInput.disabled=false;
+  submitBtn.disabled=false;
+  passBtn.disabled=false;
+  message.textContent="";
+}
+
+function showGame(){
+  setup.classList.add("hidden");
+  locked.classList.add("hidden");
+  result.classList.add("hidden");
+  game.classList.remove("hidden");
+  showClue();
+}
+
+function finishGame(score){
+  points=score;
+  saveProgress(true);
+  game.classList.add("hidden");
+  result.classList.remove("hidden");
+  document.getElementById("finalScore").textContent=score+" points";
+  document.getElementById("resultMessage").textContent =
+    score>0 ? "Excellent guessing! Well played! 🎉" :
+    "Good try! Better luck with tomorrow's challenge.";
+}
+
+async function sendAction(action,answerText){
+  if(busy) return;
+  busy=true;
+  submitBtn.disabled=true;
+  passBtn.disabled=true;
+  message.textContent="Please wait...";
+
+  try{
+    const body={action,session_id:sessionId};
+    if(action==="answer") body.answer=answerText;
+
+    const response=await fetch(SUPABASE_URL+"/functions/v1/super-task",{
+      method:"POST",
+      headers:headers(),
+      body:JSON.stringify(body)
+    });
+
+    const data=await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error || "Something went wrong.");
     }
 
-    window.selectLanguage = async function(language) {
-      stopAudio();
+    if(action==="answer" && data.correct){
+      finishGame(data.points);
+      return;
+    }
 
-      cluesDiv.innerHTML = "";
-      statusDiv.textContent = "Loading today's challenge...";
+    points=data.points;
 
-      const today = getTodayDate();
+    if(data.completed || data.next_clue===null){
+      finishGame(points);
+      return;
+    }
 
-      const { data, error } = await supabase
-        .from("daily_challenges")
-        .select("*")
-        .eq("challenge_date", today)
-        .eq("language", language)
-        .maybeSingle();
+    currentClue=data.next_clue;
+    saveProgress(false);
 
-      if (error) {
-        statusDiv.textContent = "Could not load challenge. Please try again.";
-        console.error(error);
+    if(action==="answer"){
+      message.textContent="❌ Not quite! Here comes the next clue.";
+    }else{
+      message.textContent="Moving to the next clue...";
+    }
+
+    showClue();
+
+  }catch(err){
+    message.textContent=err.message;
+    submitBtn.disabled=false;
+    passBtn.disabled=false;
+  }finally{
+    busy=false;
+  }
+}
+
+startBtn.addEventListener("click",async()=>{
+  showError("");
+  startBtn.disabled=true;
+  document.getElementById("setupMessage").textContent="Loading challenge...";
+
+  try{
+    const language=document.getElementById("language").value;
+    storageKey="reelRiddleAttempt_"+indiaDate();
+
+    const saved=localStorage.getItem(storageKey);
+
+    if(saved){
+      const progress=JSON.parse(saved);
+
+      if(progress.completed){
+        setup.classList.add("hidden");
+        locked.classList.remove("hidden");
         return;
       }
 
-      if (!data || !data.audio_paths || data.audio_paths.length === 0) {
-        statusDiv.textContent = "No challenge available for today.";
-        return;
-      }
-
-      cluesDiv.innerHTML = "<h3>Listen to the Clues</h3>";
-
-      data.audio_paths.forEach((audioUrl, index) => {
-        const button = document.createElement("button");
-
-        button.className = "clue-button";
-        button.textContent = `▶ Play Clue ${index + 1}`;
-
-        button.onclick = () => toggleClue(index, audioUrl);
-
-        cluesDiv.appendChild(button);
-      });
-
-      statusDiv.textContent = `${language} challenge loaded successfully!`;
-    };
-
-    function stopAudio() {
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-      }
-
-      currentAudio = null;
-      currentIndex = null;
-
-      document.querySelectorAll(".clue-button").forEach((button, index) => {
-        button.textContent = `▶ Play Clue ${index + 1}`;
-      });
+      challenge=await getChallenge(progress.language);
+      sessionId=progress.sessionId;
+      currentClue=progress.currentClue;
+      points=progress.points;
+      showGame();
+      return;
     }
 
-    async function toggleClue(index, audioUrl) {
-      const buttons = document.querySelectorAll(".clue-button");
-      const button = buttons[index];
+    challenge=await getChallenge(language);
+    sessionId=await startSession(language);
+    currentClue=1;
+    points=0;
+    saveProgress(false);
+    showGame();
 
-      // Pause or resume the currently selected clue.
-      if (currentAudio && currentIndex === index) {
-        if (currentAudio.paused) {
-          try {
-            await currentAudio.play();
-            button.textContent = `⏸ Pause Clue ${index + 1}`;
-            statusDiv.textContent = `Playing Clue ${index + 1}`;
-          } catch (error) {
-            button.textContent = `▶ Play Clue ${index + 1}`;
-            statusDiv.textContent = "Audio could not play. Please try again.";
-          }
-        } else {
-          currentAudio.pause();
-          button.textContent = `▶ Play Clue ${index + 1}`;
-          statusDiv.textContent = `Clue ${index + 1} paused.`;
-        }
+  }catch(err){
+    showError(err.message);
+    document.getElementById("setupMessage").textContent="";
+  }finally{
+    startBtn.disabled=false;
+  }
+});
 
-        return;
-      }
+submitBtn.addEventListener("click",()=>{
+  const answer=answerInput.value.trim();
+  if(!answer){
+    message.textContent="Please enter your movie guess.";
+    return;
+  }
+  sendAction("answer",answer);
+});
 
-      // Stop the previous clue before starting another one.
-      stopAudio();
+passBtn.addEventListener("click",()=>{
+  sendAction("pass");
+});
 
-      currentAudio = new Audio(audioUrl);
-      currentIndex = index;
-
-      currentAudio.addEventListener("ended", () => {
-        if (currentIndex === index) {
-          button.textContent = `▶ Play Clue ${index + 1}`;
-          statusDiv.textContent = `Clue ${index + 1} completed.`;
-          currentAudio = null;
-          currentIndex = null;
-        }
-      });
-
-      currentAudio.addEventListener("error", () => {
-        if (currentIndex === index) {
-          button.textContent = `▶ Play Clue ${index + 1}`;
-          statusDiv.textContent = "Audio could not play. Please check the uploaded audio file.";
-          currentAudio = null;
-          currentIndex = null;
-        }
-      });
-
-      try {
-        await currentAudio.play();
-        button.textContent = `⏸ Pause Clue ${index + 1}`;
-        statusDiv.textContent = `Playing Clue ${index + 1}`;
-      } catch (error) {
-        button.textContent = `▶ Play Clue ${index + 1}`;
-        statusDiv.textContent = "Audio could not play. Please try again.";
-        currentAudio = null;
-        currentIndex = null;
-      }
-    }
-  </script>
+answerInput.addEventListener("keydown",event=>{
+  if(event.key==="Enter") submitBtn.click();
+});
+</script>
 </body>
 </html>
