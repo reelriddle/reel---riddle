@@ -54,7 +54,10 @@ footer{text-align:center;color:#777;font-size:12px;padding:20px}
 <section class="card hidden" id="game">
   <div class="status" id="clueStatus">CLUE 1 OF 4</div>
   <div id="clueArea"></div>
-
+<div id="replayNav" class="hidden">
+  <button class="secondary" id="prevClueBtn">Previous Clue</button>
+  <button class="secondary" id="nextClueBtn">Next Clue</button>
+</div>
   <label for="answer">Guess the movie name</label>
   <input id="answer" type="text" placeholder="Enter movie name..." autocomplete="off">
   <button class="primary" id="submitBtn">Submit Answer</button>
