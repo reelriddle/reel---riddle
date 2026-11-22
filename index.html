@@ -299,10 +299,30 @@ startBtn.addEventListener("click",async()=>{
       const progress=JSON.parse(saved);
 
       if(progress.completed){
-        setup.classList.add("hidden");
-        locked.classList.remove("hidden");
-        return;
-      }
+  challenge=await getChallenge(progress.language);
+  sessionId=progress.sessionId;
+  currentClue=progress.currentClue || 1;
+  points=progress.points || 0;
+  attemptCompleted=true;
+
+  showGame();
+
+  document.getElementById("finalScore").textContent=points+" points";
+
+  document.getElementById("resultMessage").textContent =
+    points>0 ? "Excellent guessing! Well played! 🎉" :
+    "Good try! Better luck next time.";
+
+  result.classList.remove("hidden");
+
+  answerInput.disabled=true;
+  submitBtn.disabled=true;
+  passBtn.disabled=true;
+
+  message.textContent="Challenge completed! You can listen again, but cannot submit another answer.";
+
+  return;
+}
 
       challenge=await getChallenge(progress.language);
       sessionId=progress.sessionId;
