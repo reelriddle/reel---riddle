@@ -207,9 +207,9 @@ function showClue(){
   audio.load();
 
   answerInput.value="";
-  answerInput.disabled=false;
-  submitBtn.disabled=false;
-  passBtn.disabled=false;
+  answerInput.disabled=attemptCompleted;
+submitBtn.disabled=attemptCompleted;
+passBtn.disabled=attemptCompleted;
   message.textContent="";
 }
 
