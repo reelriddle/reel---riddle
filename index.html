@@ -210,7 +210,16 @@ function showClue(){
   answerInput.disabled=attemptCompleted;
 submitBtn.disabled=attemptCompleted;
 passBtn.disabled=attemptCompleted;
-  message.textContent="";
+  updateReplayNav();
+}
+  function updateReplayNav(){
+  const replayNav = document.getElementById("replayNav");
+  const prev = document.getElementById("prevClueBtn");
+  const next = document.getElementById("nextClueBtn");
+
+  replayNav.classList.toggle("hidden", !attemptCompleted);
+  prev.disabled = currentClue <= 1;
+  next.disabled = currentClue >= 4;
 }
 
 function showGame(){
@@ -304,7 +313,7 @@ startBtn.addEventListener("click",async()=>{
       if(progress.completed){
   challenge=await getChallenge(progress.language);
   sessionId=progress.sessionId;
-  currentClue=progress.currentClue || 1;
+  currentClue=1;
   points=progress.points || 0;
   attemptCompleted=true;
 
@@ -361,6 +370,17 @@ submitBtn.addEventListener("click",()=>{
 
 passBtn.addEventListener("click",()=>{
   sendAction("pass");
+});
+  document.getElementById("prevClueBtn").addEventListener("click",()=>{
+  if(!attemptCompleted || currentClue <= 1) return;
+  currentClue--;
+  showClue();
+});
+
+document.getElementById("nextClueBtn").addEventListener("click",()=>{
+  if(!attemptCompleted || currentClue >= 4) return;
+  currentClue++;
+  showClue();
 });
 
 answerInput.addEventListener("keydown",event=>{
