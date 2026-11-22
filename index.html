@@ -111,6 +111,12 @@ let attemptCompleted = false;
 let storageKey = null;
 
 function indiaDate(){
+  const datePicker = document.getElementById("challengeDate");
+
+  if(datePicker && datePicker.value){
+    return datePicker.value;
+  }
+
   return new Intl.DateTimeFormat("en-CA",{
     timeZone:"Asia/Kolkata",
     year:"numeric",
